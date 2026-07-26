@@ -1264,7 +1264,9 @@ Protocol 與文件可以檢查：
     - 適用的上游 Framework 文件
 11. 後續所有聊天室都以同一個專案儲存庫為共同來源。
     - AI 可以草擬需要保留的需求、設計、決策、風險、文件與變更內容。
-    - 草擬內容必須先由適當人員 Review；經人員確認後，才可以寫回專案並成為受控內容。
+    - 草擬內容必須先由適當人員 Review；經人員確認後，才可以寫回專案作為 Draft 或候選內容。
+    - 寫回專案本身不代表內容已被 Reviewed、Approved、Accepted，或已成為有效專案基線。
+    - 正式 lifecycle 狀態必須由 `docs/Approval_Records.md` 中針對精確內容基線與範圍建立的有效紀錄確認。
 12. Approval、Risk Acceptance、Evidence Acceptance、Test Result、Framework Conformance 與 Release 等正式紀錄，只能在真實決策、審查或執行完成後，由具備適當權限的人員建立或確認。
     - AI 不得自行建立、推論、補造或冒充上述正式紀錄與結論。
     - 所有 AI 產出仍必須由適當人員 Review。
@@ -1276,7 +1278,8 @@ host-device-control-framework
     跨專案工程方法、規則與權威文件
                     │
                     │ 由 FRAMEWORK_REFERENCE.md 記錄候選來源與適用性
-                    │ 由 Approval_Records.md 建立有效基線
+                    │ 由授權人員核准，並以有效 APR-xxx 紀錄
+                    │ 與可追蹤核准證據確認精確內容基線
                     ▼
 由 Project Template 建立的專案儲存庫
     專案事實、需求、Protocol、設計、決策、
@@ -1365,9 +1368,14 @@ Framework 基線、權威來源與文件責任為基礎。
 4. docs/Approval_Records.md
 5. docs/Decision_Log.md
 6. 與本次工作範圍相關的專案文件
-7. 依 FRAMEWORK_REFERENCE.md 提出的來源與適用性，以及
-   docs/Approval_Records.md 中有效核准紀錄所確認的精確
-   Framework 基線，讀取適用的上游 Framework 文件
+7. 讀取上游 Framework 文件時：
+   - 若 `docs/Approval_Records.md` 已針對精確
+     `DOC-FRAMEWORK` 內容基線建立有效核准紀錄，
+     請讀取該 pinned Commit 中適用的 Framework 文件。
+   - 若尚未 Pin，或尚未建立有效核准紀錄，
+     可以讀取目前的 Framework `main` 作為諮詢性參考，
+     但必須明確說明它不是本專案的有效 Framework 基線，
+     且不得據此宣稱 Approval、Deviation 或 Conformance。
 
 本次工作範圍是：
 
@@ -1393,8 +1401,10 @@ Framework 基線、權威來源與文件責任為基礎。
 5. 只處理本次指定的工作範圍，不要自行生成整個系統。
 6. 提出設計、文件、程式碼或測試建議時，說明依據的來源、
    Framework 規則、專案事實、假設與限制。
-7. 若專案目前只以 Framework main 作為諮詢性參考，
-   請明確說明它尚未成為有效的 pinned project baseline。
+7. 若本次使用 Framework `main` 作為諮詢性參考，
+   請明確說明它尚未成為有效的 pinned project baseline，
+   並將所有依據該來源提出的內容標示為待確認建議，
+   不得宣稱 Approval、Deviation、Conformance 或正式採用。
 8. 不要自動把較新的 Framework 或 Template 套用到本專案。
    若發現新版，先提供差異與影響分析，等待授權人員決定。
 9. 保留由適當人員執行需求確認、架構決策、風險判斷、

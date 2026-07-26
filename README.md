@@ -44,7 +44,11 @@
 - 不代表所有相關文件都已經完成、定版或通過實際產品驗證
 - 不應被單獨視為產品設計、測試證據、法規符合性或發布核准依據
 
-正式的方法論文件、文件版本、文件狀態及權威主題，應以 [`host-device-control-framework`](https://github.com/jkman357/host-device-control-framework) 的 GitHub `main`、其中的 [`authority-registry.yaml`](https://github.com/jkman357/host-device-control-framework/blob/main/authority-registry.yaml)，以及其所指向的權威文件為準。
+若只是閱讀目前維護中的 Framework 內容，應以 [`host-device-control-framework`](https://github.com/jkman357/host-device-control-framework) 的 GitHub `main`、其中的 [`authority-registry.yaml`](https://github.com/jkman357/host-device-control-framework/blob/main/authority-registry.yaml)，以及其所路由的權威文件為準。
+
+若是進行實際專案工作，則應以該專案透過 `FRAMEWORK_REFERENCE.md` 提出的精確 Framework 來源與適用性，以及 `docs/Approval_Records.md` 中針對精確 `DOC-FRAMEWORK` 內容基線建立的有效核准紀錄為準。
+
+在 Framework 尚未 Pin 到完整 Commit SHA，或尚未建立有效核准紀錄時，Framework `main` 只能作為諮詢性參考，不得被宣稱為該專案已採用的有效 Framework 基線。
 
 實際專案中的產品需求、風險控制、硬體規格、Project Protocol、測試證據與核准紀錄，則仍應以該專案所指定及核准的來源為準。
 
@@ -1258,8 +1262,12 @@ Protocol 與文件可以檢查：
     - `docs/Decision_Log.md`
     - 與本次工作範圍相關的專案文件
     - 適用的上游 Framework 文件
-11. 後續所有聊天室都以同一個專案儲存庫為共同來源，並將需要保留的需求、決策、風險、文件與變更寫回專案中。
-12. 所有 AI 產出都必須由適當的人員 Review；AI 不得自行建立核准、風險接受、測試通過、Evidence 接受、Framework Conformance 或 Release 結論。
+11. 後續所有聊天室都以同一個專案儲存庫為共同來源。
+    - AI 可以草擬需要保留的需求、設計、決策、風險、文件與變更內容。
+    - 草擬內容必須先由適當人員 Review；經人員確認後，才可以寫回專案並成為受控內容。
+12. Approval、Risk Acceptance、Evidence Acceptance、Test Result、Framework Conformance 與 Release 等正式紀錄，只能在真實決策、審查或執行完成後，由具備適當權限的人員建立或確認。
+    - AI 不得自行建立、推論、補造或冒充上述正式紀錄與結論。
+    - 所有 AI 產出仍必須由適當人員 Review。
 
 概念上可以表示為：
 
@@ -1267,7 +1275,8 @@ Protocol 與文件可以檢查：
 host-device-control-framework
     跨專案工程方法、規則與權威文件
                     │
-                    │ 由 FRAMEWORK_REFERENCE.md 指定來源與適用性
+                    │ 由 FRAMEWORK_REFERENCE.md 記錄候選來源與適用性
+                    │ 由 Approval_Records.md 建立有效基線
                     ▼
 由 Project Template 建立的專案儲存庫
     專案事實、需求、Protocol、設計、決策、
@@ -1285,17 +1294,21 @@ AI Project / Chats
 
 Framework 的 GitHub `main` 可以作為最新內容的檢視來源，但「最新版本」不應自動取代專案目前採用的 Framework 基線。
 
-專案應透過 `FRAMEWORK_REFERENCE.md` 記錄：
+專案應透過 `FRAMEWORK_REFERENCE.md` 記錄待審查的：
 
 - 上游 Framework 儲存庫
-- 供參考檢視的 Branch
-- 擬採用或已採用的完整 Commit SHA
+- 供諮詢檢視的 Branch
+- Proposed Framework full Commit SHA
 - 存取日期
-- Framework 各領域的適用性
+- Framework 各領域的擬議適用性
 - 前一版 Framework 基線
 - 基線或適用性變更的影響評估來源
 
-在 Framework 尚未 Pin 到完整 Commit SHA、尚未完成適用性判定，或尚未由有效的外部核准紀錄確認前：
+`FRAMEWORK_REFERENCE.md` 本身不建立有效核准、Authority 或專案 Framework 基線。
+
+有效的 Framework 基線，必須由 `docs/Approval_Records.md` 中針對精確 `DOC-FRAMEWORK` 內容基線建立的有效核准紀錄確認。
+
+在 Framework 尚未 Pin 到完整 Commit SHA、尚未完成適用性判定，或尚未由 `docs/Approval_Records.md` 中針對精確 `DOC-FRAMEWORK` 內容基線建立有效核准紀錄前：
 
 - AI 可以將目前的 `main` 作為諮詢性參考
 - AI 必須明確說明來源尚未成為有效的專案 Framework 基線
@@ -1314,14 +1327,17 @@ Framework 的 GitHub `main` 可以作為最新內容的檢視來源，但「最�
 
 是否採用新版，仍需由授權人員決定。
 
-確認採用後，才可以：
+授權人員決定擬採用新版後，應依序：
 
-1. 更新 `FRAMEWORK_REFERENCE.md`
+1. 更新 `FRAMEWORK_REFERENCE.md` 中待審查的來源、Commit SHA 與適用性內容
 2. 建立或更新變更影響評估
 3. 更新受影響的專案文件與實作
-4. 建立新的內容基線
-5. 完成必要的 Review 與核准紀錄
-6. 重新確認受影響的測試、Evidence、Claim 與 Release 狀態
+4. 建立新的精確內容基線
+5. 完成必要的 Review
+6. 在 `docs/Approval_Records.md` 中針對精確 `DOC-FRAMEWORK` 內容基線建立有效核准紀錄
+7. 重新確認受影響的測試、Evidence、Claim 與 Release 狀態
+
+只有完成必要核准後，新版 Framework 才能被視為該專案的有效基線。
 
 Framework 基線或適用性變更後，既有的下游核准不應被預設為仍然有效。
 
@@ -1349,7 +1365,9 @@ Framework 基線、權威來源與文件責任為基礎。
 4. docs/Approval_Records.md
 5. docs/Decision_Log.md
 6. 與本次工作範圍相關的專案文件
-7. 依 FRAMEWORK_REFERENCE.md 指向及判定適用的上游 Framework 文件
+7. 依 FRAMEWORK_REFERENCE.md 提出的來源與適用性，以及
+   docs/Approval_Records.md 中有效核准紀錄所確認的精確
+   Framework 基線，讀取適用的上游 Framework 文件
 
 本次工作範圍是：
 
@@ -1358,6 +1376,8 @@ Framework 基線、權威來源與文件責任為基礎。
 請遵守下列要求：
 
 1. 先說明你實際讀取的來源、目前 Framework 是否已 Pin、
+   FRAMEWORK_REFERENCE.md 中的內容是否仍為待審查候選內容、
+   是否已有 Approval_Records.md 的有效核准紀錄、
    Framework 適用性狀態，以及任何存取限制。
 2. 區分下列內容：
    - 外部強制義務
@@ -1467,7 +1487,15 @@ Project Template 提供的是建立新專案儲存庫的骨架。
 
 它比較像是一套工程規則、設計依據、權威文件索引與共同語言，用來協助後續專案建立一致的基礎。
 
-這個儲存庫的主要讀者之一是 AI。AI 應先讀取 GitHub `main`、`authority-registry.yaml` 及其所指向的適用文件，再依文件狀態與權威範圍協助後續專案工作。
+這個儲存庫的主要讀者之一是 AI。
+
+一般閱讀目前維護中的 Framework 內容時，AI 可以讀取 GitHub `main`、`authority-registry.yaml` 及其所路由的適用文件。
+
+進行實際專案工作時，AI 應先讀取該專案的 `FRAMEWORK_REFERENCE.md` 與 `docs/Approval_Records.md`：
+
+- 若已有有效的 pinned Framework 基線，AI 應讀取該精確 Commit 及適用文件。
+- 若尚未 Pin 或尚未建立有效核准紀錄，AI 才可以將目前的 Framework `main` 作為諮詢性參考。
+- 使用諮詢性 `main` 時，AI 必須明確說明它尚未成為該專案的有效 Framework 基線。
 
 ---
 

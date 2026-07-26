@@ -12,15 +12,17 @@
 
 例如：
 
-- 一個通訊系統在開始寫程式之前，應該先定義哪些事情？
-- PC、SoC 與 MCU 之間的責任應該如何劃分？
+- 一個系統在開始大量寫程式之前，應該先定義哪些事情？
+- PC、SoC、MCU 與各個 Device Module 之間的責任應該如何劃分？
 - 命令、回覆、狀態與即時資料應該如何區分？
-- 發生逾時、斷線、資料錯誤或裝置重啟時，系統應該如何處理？
+- 發生逾時、斷線、資料錯誤、模組失效或裝置重啟時，系統應該如何處理？
 - 哪些資訊應該成為所有程式共同遵循的唯一來源？
-- 如何避免 PC 與 MCU 各自維護一份不同版本的通訊規格？
+- 如何避免 PC、SoC 與 MCU 各自維護不同版本的通訊規格？
+- 如何讓不同 RTOS、MCU 平台與外部 IC 可以被替換？
+- 如何設計 Logging、Testing、Concurrency 與錯誤處理？
 - 哪些規則可以透過工具自動檢查？
 - 哪些判斷仍然必須由工程師負責？
-- 如何讓 AI 產生的程式碼，不只是可以編譯，而是更接近真正可維護、可審查與可驗證的工程實作？
+- 如何讓 AI 產生的程式碼，不只是可以編譯，而是更接近真正可維護、可審查、可測試與可驗證的工程實作？
 
 這些事情很難只靠一份程式碼說清楚，也很難從單一產品或單一技術平台直接歸納出來。
 
@@ -28,9 +30,40 @@
 
 ---
 
-## 這套方法論想解決什麼問題？
+# 這套方法論的定位
 
-Host 與 Device 的整合，表面上看起來只是「把兩邊接起來」。
+這是一套以 Host-Device Control System 為主要實驗場景，涵蓋軟體工程規則、架構模式、並行處理、Logging、Testing、RTOS 抽象化、Device 模組化與單一資訊來源治理的實驗性工程方法論。
+
+Host 與 Device 之間的控制及資料交換，是目前最主要的概念驗證場景，但不是這套方法論唯一關注的內容。
+
+通訊協議只是整個系統中的一部分。
+
+一個真正可以長期維護、持續擴充、跨平台移植並被不同工程師接手的系統，還需要同時處理：
+
+- Software Engineering Rules
+- Architecture Patterns
+- Embedded C Coding Rules
+- C# Coding Rules
+- Concurrency Guide
+- Logging Guide
+- Testing Guide
+- Protocol Definition
+- Single Source of Truth
+- Operating System Abstraction
+- Hardware Abstraction
+- Device Abstraction
+- Error Handling
+- Version and Change Management
+- Automated Validation and CI
+- Human and AI Responsibility Boundaries
+
+因此，這套方法論比較接近一組可組合、可延伸的工程指引，而不只是一份 PC 與 MCU 的通訊規格。
+
+---
+
+# 這套方法論想解決什麼問題？
+
+Host、SoC、MCU 與外部裝置的整合，表面上看起來只是「把各個模組接起來」。
 
 但真正進入專案後，通常會同時遇到許多問題：
 
@@ -38,12 +71,19 @@ Host 與 Device 的整合，表面上看起來只是「把兩邊接起來」。
 - 文件寫的內容與實際程式碼不一致
 - 通訊格式只存在於某一端的程式碼中
 - 不同工程師各自保留一份規格
+- UI、通訊、Protocol 與產品邏輯全部混在一起
+- MCU 的中斷、通訊解析與功能執行互相耦合
+- 應用程式直接依賴特定 RTOS API
+- 更換 RTOS 時需要修改大量應用層程式
+- 更換 Sensor、Charger IC 或 Smart Battery 時影響整個系統
+- 裝置模組無法被模擬或替換，導致測試困難
 - 命令送出後，沒有定義多久算逾時
 - 裝置忙碌時，不知道應該拒絕、排隊還是覆蓋命令
 - 發生斷線後，系統不知道如何恢復
 - 即時資料與控制命令共用相同流程，互相影響
-- UI、通訊與產品邏輯全部混在一起
-- MCU 的中斷、通訊解析與功能執行互相耦合
+- 多執行緒或多 Task 共享資料，但沒有清楚同步規則
+- 系統發生問題時，Log 無法還原事件經過
+- 測試只驗證正常流程，沒有覆蓋錯誤與邊界條件
 - 程式雖然可以執行，但難以測試、維護與移植
 - AI 可以快速生成大量程式碼，卻缺乏共同規則可以審查
 
@@ -53,21 +93,380 @@ Host 與 Device 的整合，表面上看起來只是「把兩邊接起來」。
 
 - 系統架構
 - 模組責任
+- 公開介面
 - 通訊協議
-- 資料來源
+- 單一資訊來源
 - Coding Rules
+- Concurrency Rules
+- Logging Strategy
+- Testing Strategy
+- RTOS 與硬體抽象層
 - 錯誤處理
-- 版本規則
-- 測試方式
+- 版本與變更規則
+- 自動檢查方式
 - 人與 AI 的責任邊界
 
 這樣做不一定能消除所有問題，但可以讓問題更早被看見、更容易被討論，也更容易留下可以追蹤的工程紀錄。
 
 ---
 
-# 適用的通訊架構
+# Software Engineering Rules
 
-這套方法主要聚焦在「Host 與 Device 之間的控制與資料交換」。
+這套方法論會整理軟體開發中應共同遵循的工程規則。
+
+內容不只包含程式碼的命名、縮排或排版，也包含：
+
+- 模組責任應如何劃分
+- 公開介面與內部實作應如何分離
+- 資料由哪一個模組擁有
+- 模組之間是否可以直接存取彼此內部資料
+- 錯誤是否可以被忽略
+- 相依關係應如何控制
+- 平台相關程式碼應放在哪一層
+- 哪些內容可以共用
+- 哪些內容必須依專案實際需求實作
+- 哪些內容可以由 AI 協助產生
+- 哪些內容必須由工程師確認
+- 如何避免程式雖然可以執行，卻無法測試、擴充與維護
+
+這些規則會分別落實到 Embedded C、C# 及其它可能使用的程式語言中。
+
+不同語言會有不同的實作方式，但仍然應遵守共同的系統原則。
+
+---
+
+# Architecture Patterns
+
+這套方法論也會探討可重複使用的軟體架構模式。
+
+例如：
+
+- Layered Architecture
+- Event-driven Architecture
+- State Machine
+- Message Queue
+- Command Dispatcher
+- Publish-Subscribe
+- Dependency Inversion
+- Hardware Abstraction
+- Operating System Abstraction
+- Device Abstraction
+- Adapter Pattern
+- Interface-based Design
+
+這些架構模式不是為了讓程式看起來更複雜，而是希望解決實際專案中常見的問題：
+
+- UI 與通訊程式綁得太緊
+- 通訊解析直接控制硬體
+- MCU Driver 與產品邏輯混在一起
+- 更換 RTOS 時需要重寫大量應用程式
+- 更換 Sensor、Charger IC 或 Smart Battery 時影響整個系統
+- 測試時無法替換真實硬體
+- 模組之間互相依賴，修改一處便影響多處
+- 新增功能時只能持續堆疊條件判斷
+- 系統責任隨著專案成長而逐漸失去邊界
+
+架構模式的目的，是讓系統中的變動被限制在合理範圍內。
+
+---
+
+# Concurrency Guide
+
+Host、SoC 與 MCU 系統通常同時執行多項工作。
+
+例如：
+
+- 接收通訊資料
+- 傳送命令
+- 更新畫面
+- 控制馬達
+- 讀取感測器
+- 管理充電器
+- 讀取 Smart Battery
+- 寫入紀錄
+- 執行逾時判斷
+- 處理錯誤
+- 執行背景測試
+
+因此，這套方法論也包含 Concurrency Guide，用來整理並行、非同步與多執行緒程式的設計原則。
+
+在 MCU 端，可能涉及：
+
+- Interrupt
+- Main Loop
+- Event Queue
+- RTOS Task
+- Message Queue
+- Semaphore
+- Mutex
+- Shared Resource
+- Task Priority
+- Timeout
+- Race Condition
+- Priority Inversion
+
+在 PC 端，可能涉及：
+
+- UI Thread
+- Background Thread
+- `async` 與 `await`
+- `Task`
+- `CancellationToken`
+- Event Callback
+- Thread-safe Collection
+- Synchronization Context
+- Connection Lifecycle
+
+Concurrency Guide 的目的，不是要求所有功能都拆成獨立執行緒或 RTOS Task。
+
+真正的重點是清楚回答：
+
+- 哪一個執行環境負責哪一項工作？
+- 哪些資料可能被同時存取？
+- 哪些操作可以阻塞？
+- 哪些操作必須可以取消？
+- 發生逾時後如何恢復？
+- 系統關閉或斷線時，背景工作如何停止？
+- 如何避免 Race Condition、Deadlock 與資料不同步？
+- 如何避免不必要的 Task、Thread 與同步機制增加系統複雜度？
+
+---
+
+# Logging Guide
+
+當系統發生問題時，只知道「不能動」、「斷線」或「程式當掉」通常不足以找到真正原因。
+
+因此，這套方法論也會整理 Logging Guide。
+
+Logging 不只是輸出一些除錯文字，而是要考慮：
+
+- 哪些事件需要留下紀錄
+- Log Level 如何分類
+- 時間戳如何產生
+- Host 與 Device 的時間如何對應
+- Command 與 Response 如何關聯
+- 錯誤碼與系統狀態如何記錄
+- 高頻資料是否應全部保存
+- Log 是否會影響即時效能
+- 儲存空間不足時如何處理
+- 敏感資訊是否需要隱藏
+- 如何讓測試人員與工程師可以重建問題發生過程
+
+PC、SoC 與 MCU 的資源條件不同，因此 Logging 的實作方式也會不同。
+
+但各端仍然需要使用一致的事件名稱、錯誤定義與系統語意，否則各端的紀錄仍然無法互相對照。
+
+---
+
+# Testing Guide
+
+這套方法論不把測試視為程式完成後才開始進行的工作。
+
+Testing Guide 會從設計階段開始考慮：
+
+- 模組是否可以獨立測試
+- Hardware-dependent Code 是否可以替換
+- Protocol 是否可以使用模擬器驗證
+- 正常流程與異常流程是否都有測試
+- Timeout、斷線與重新連線如何測試
+- 不同版本的相容性如何測試
+- PC 與 MCU 是否能進行自動化整合測試
+- 長時間運作是否穩定
+- 高頻資料是否會遺失
+- 系統忙碌時是否仍能正確回應
+- 更換 RTOS、MCU 或 Device Module 後，需要重新驗證哪些內容
+
+測試可能包含：
+
+- Unit Test
+- Module Test
+- Protocol Test
+- Integration Test
+- Hardware-in-the-loop Test
+- System Test
+- Stress Test
+- Long-duration Test
+- Fault Injection
+- Regression Test
+
+這些測試不一定都能在每個概念驗證中完整實作，但應該在架構中預留可測試性。
+
+---
+
+# 透過 OSHAL 支援不同 Bare-metal 與 RTOS 環境
+
+Firmware 端可能使用不同的執行環境。
+
+例如：
+
+- Bare-metal
+- FreeRTOS
+- Azure RTOS ThreadX
+- Zephyr RTOS
+- TI-RTOS
+- 其它 RTOS
+
+如果應用程式直接呼叫特定 RTOS 的 API，整個系統便會與該 RTOS 緊密綁定。
+
+例如，應用模組若直接使用：
+
+- FreeRTOS Queue
+- ThreadX Message Queue
+- Zephyr Message Queue
+- 特定 RTOS 的 Mutex、Thread 或 Timer API
+
+未來更換 RTOS 時，便可能需要修改大量應用層程式碼。
+
+因此，這套方法論會透過 OSHAL，也就是本專案用來隔離 Bare-metal 與不同 RTOS 差異的作業系統抽象層，降低應用程式對特定執行環境的直接依賴。
+
+概念上可以表示為：
+
+```text
+Application Modules
+        │
+        ▼
+       OSHAL
+        │
+        ├──── Bare-metal Implementation
+        ├──── FreeRTOS Implementation
+        ├──── ThreadX Implementation
+        ├──── Zephyr Implementation
+        └──── Other RTOS Implementation
+```
+
+應用模組只依賴 OSHAL 提供的共同介面，例如：
+
+- Task 或 Thread
+- Queue
+- Mutex
+- Semaphore
+- Event
+- Timer
+- Delay
+- Time
+- Critical Section
+
+不同 RTOS 的 API 差異，則由各自的 OSHAL Implementation 負責處理。
+
+這樣做不代表更換 RTOS 可以完全不修改任何程式。
+
+不同 RTOS 在排程、記憶體、時間精度、同步行為與錯誤模式上仍然可能不同，也仍然需要重新驗證。
+
+但 OSHAL 可以降低平台差異直接擴散到整個應用程式的程度。
+
+---
+
+# Device 模組化與可抽換設計
+
+Device 端不應將所有硬體功能直接寫死在產品邏輯中。
+
+實際產品可能需要更換：
+
+- Sensor
+- Charger IC
+- Smart Battery
+- Motor Driver
+- ADC
+- EEPROM
+- Flash
+- Display
+- Communication Transceiver
+- 其它外部 IC 或模組
+
+例如，同一個產品可能先使用某一款 Charger IC，後續因為停產、缺料、成本或功能需求而更換另一款 IC。
+
+如果應用程式直接依賴特定 IC 的 Register 與 Driver，硬體更換時便會影響大量程式。
+
+因此，可以透過共同介面將產品功能與特定元件分離。
+
+概念上可以表示為：
+
+```text
+Power Management Application
+            │
+            ▼
+     Charger Interface
+            │
+      ┌─────┴─────┐
+      │           │
+LTC4162 Driver  Other Charger Driver
+```
+
+Sensor 也可以採用相同方式：
+
+```text
+Sensing Application
+          │
+          ▼
+    Sensor Interface
+          │
+    ┌─────┼─────┐
+    │     │     │
+Sensor A Sensor B Mock Sensor
+```
+
+Smart Battery、Motor Driver 或其它裝置，也可以依照相同原則設計。
+
+這類模組化設計的目的包括：
+
+- 降低特定 IC 對整個系統的影響
+- 支援不同供應商或不同產品型號
+- 讓測試程式可以替換真實硬體
+- 讓新舊模組可以逐步轉移
+- 讓不同專案可以重複使用共同應用邏輯
+- 將硬體差異限制在 Driver 與 Adapter 層
+- 讓未來功能擴充時不需要全面改寫既有程式
+
+不過，可抽換不代表所有 Device 都能完全使用同一套功能。
+
+不同元件的能力、限制與錯誤模式可能不同。
+
+因此，共同介面應定義真正共通的能力，而不能為了表面一致，隱藏重要的硬體差異。
+
+---
+
+# 可擴充與可延伸
+
+這套方法論的目標，不是預先猜出所有未來需求。
+
+它比較重視的是，當系統需要增加新功能時，是否能在不破壞既有責任邊界的情況下擴充。
+
+例如：
+
+- 增加新的 Command
+- 增加新的 Telemetry
+- 增加第二個 MCU
+- 從一對一擴充為一對多
+- 增加新的 Sensor
+- 更換 Charger IC
+- 更換 Smart Battery
+- 支援另一套 RTOS
+- 增加新的 PC UI
+- 增加 CLI 或 Python 測試工具
+- 增加 Ethernet 或 CAN Bus 通訊介面
+- 增加 Logging Backend
+- 增加新的自動化測試
+
+理想的擴充方式，不是直接修改所有既有模組，而是：
+
+- 新增明確的介面
+- 新增可替換的實作
+- 保持既有模組責任
+- 更新單一資訊來源
+- 補充測試與驗證
+- 清楚記錄相容性與限制
+
+因此，「可擴充」不是單純代表可以一直增加程式碼。
+
+它真正代表的是：
+
+> 當需求、平台、RTOS、通訊介面或硬體元件改變時，系統仍然有清楚的位置可以容納這些變動。
+
+---
+
+# 適用的 Host-Device 架構
+
+這套方法論以 Host-Device Control System 作為主要應用與驗證場景。
 
 這裡的 Host，不一定只是一般桌上型電腦。
 
@@ -90,7 +489,8 @@ Device 也不一定只是單一 MCU。
 - 馬達控制器
 - 感測器模組
 - 電源控制板
-- 電池管理系統
+- Charger Module
+- Smart Battery
 - 遠端 I/O 模組
 - 機械設備
 - 醫療設備中的子系統
@@ -102,8 +502,6 @@ Device 也不一定只是單一 MCU。
 
 一台 Host 控制一個 Device。
 
-例如：
-
 ```text
 PC ───── MCU
 ```
@@ -111,8 +509,6 @@ PC ───── MCU
 ## 一對多
 
 一台 Host 控制多個 Device。
-
-例如：
 
 ```text
               ┌──── MCU A
@@ -123,8 +519,6 @@ PC 或 SoC ────┼──── MCU B
 ## 多層式架構
 
 PC 控制 SoC，再由 SoC 控制一個或多個 MCU。
-
-例如：
 
 ```text
 PC ───── SoC ───── MCU
@@ -137,8 +531,6 @@ PC ───── SoC ───── MCU
 
 MCU 與 MCU 之間交換命令、狀態或資料。
 
-例如：
-
 ```text
 Main MCU ───── Sub MCU
 ```
@@ -146,8 +538,6 @@ Main MCU ───── Sub MCU
 ## 分散式架構
 
 多個控制節點共同完成系統功能。
-
-例如：
 
 ```text
 Host
@@ -169,7 +559,7 @@ Host
 - 資料是否需要版本管理？
 - 發生異常後，系統應該如何恢復？
 
-這套方法論所關心的，就是這些跨平台、跨產品仍然會重複出現的工程問題。
+Host-Device Control 是這套方法論的主要應用背景，但不是它唯一關注的內容。
 
 ---
 
@@ -259,7 +649,7 @@ Device 端可能使用不同的微控制器或處理器平台，例如：
 
 每個平台都有自己的周邊、SDK、驅動程式、開發工具與限制。
 
-但在通訊架構上，仍然會遇到許多相似問題：
+但在通訊與系統架構上，仍然會遇到許多相似問題：
 
 - 接收到命令後要如何解析？
 - 是否可以直接在中斷中處理？
@@ -271,6 +661,7 @@ Device 端可能使用不同的微控制器或處理器平台，例如：
 - 通訊資料是否會影響即時控制工作？
 - 如何避免通訊程式與產品功能過度耦合？
 - 如何避免硬體驅動與通訊協議綁死？
+- 如何讓同一套應用邏輯可以在不同 MCU 或 RTOS 上重用？
 
 因此，這套方法論希望把平台相關的程式碼，與較高層的通訊規則、控制流程及系統責任區分開來。
 
@@ -293,8 +684,6 @@ Device 韌體可能採用不同的執行架構。
 Bare-metal 並不代表程式只能全部寫在一個無限迴圈中。
 
 透過事件驅動與狀態機，同樣可以建立清楚、可測試且具備擴充性的系統。
-
-例如：
 
 ```text
 Interrupt / Driver
@@ -339,7 +728,7 @@ Interrupt / Driver
 
 RTOS 可以提供工具，但不會自動帶來良好的系統架構。
 
-因此，這套方法論同時關注 Bare-metal 與 RTOS，並嘗試保留兩者共通的設計概念。
+因此，這套方法論同時關注 Bare-metal 與 RTOS，並透過 OSHAL 嘗試保留兩者共通的應用層設計概念。
 
 ---
 
@@ -610,7 +999,7 @@ PC 端與 MCU 端都必須依照這份定義實作，而不是各自在自己的
 9. 執行相容性與整合測試
 10. 確認雙方仍能正確通訊
 
-不應先偷偷修改 PC 或 MCU 程式碼，再回頭要求另一端配合。
+不應先修改 PC 或 MCU 程式碼，再回頭要求另一端配合。
 
 ---
 
@@ -650,6 +1039,12 @@ PC 端與 MCU 端都必須依照這份定義實作，而不是各自在自己的
 - 版本相容性
 - 硬體介面定義
 - Coding Rules
+- Architecture Patterns
+- Concurrency Rules
+- Logging Rules
+- Testing Rules
+- OSHAL Interface
+- Device Interface
 - 架構責任邊界
 - 測試預期結果
 - Release 條件
@@ -668,7 +1063,7 @@ PC 端與 MCU 端都必須依照這份定義實作，而不是各自在自己的
 
 單一資訊來源只能解決「大家應該看哪一份」的問題，不能保證那份內容本身一定正確。
 
-Protocol 仍然可能存在：
+Protocol、Coding Rules 或 Architecture Guide 仍然可能存在：
 
 - 定義錯誤
 - 未考慮的使用情境
@@ -677,6 +1072,7 @@ Protocol 仍然可能存在：
 - 不適合實際硬體的資料頻率
 - 新舊版本相容性問題
 - 不清楚的責任邊界
+- 過度抽象或抽象不足
 
 因此，共同規格仍然需要由工程師進行：
 
@@ -726,6 +1122,8 @@ Protocol 與文件可以檢查：
 - Schema 是否符合規則
 - 文件是否引用正確來源
 - 儲存庫結構是否符合要求
+- 不同模組是否違反責任邊界
+- OSHAL 或 Device Interface 是否缺少必要定義
 
 不過，自動檢查只能找出已經明確定義的問題。
 
@@ -733,6 +1131,7 @@ Protocol 與文件可以檢查：
 
 - 需求是否合理
 - 架構是否適合產品
+- 抽象層是否過度設計
 - 通訊頻率是否超出硬體能力
 - UI 行為是否符合實際使用需求
 - 多執行緒設計是否涵蓋所有使用情境
@@ -769,6 +1168,11 @@ Protocol 與文件可以檢查：
 
 內容主要包括：
 
+- Software Engineering Rules
+- Architecture Patterns
+- Concurrency Guide
+- Logging Guide
+- Testing Guide
 - 架構設計指引
 - 通訊協議定義方式
 - Host 與 Device 的責任邊界
@@ -776,6 +1180,8 @@ Protocol 與文件可以檢查：
 - 錯誤處理原則
 - Embedded C Coding Rules
 - C# Coding Rules
+- OSHAL 設計原則
+- Device 模組化與抽象化原則
 - 文件範本
 - 自動檢查工具
 - AI 輔助工程的使用原則
@@ -863,6 +1269,7 @@ Protocol 與文件可以檢查：
 - 非同步通訊是否穩定
 - 斷線與錯誤處理是否合理
 - C# Coding Rules 是否能落地使用
+- Logging 與 Testing 是否能支援實際除錯與驗證
 
 ---
 
@@ -892,8 +1299,9 @@ Protocol 與文件可以檢查：
 - State Machine 架構
 - 通訊接收與命令執行分離
 - PC 與 MCU 是否能依照同一份 Protocol 實作
+- 未來 OSHAL 與 Device Module 抽象是否能逐步落地
 
-目前的概念驗證刻意使用相對單純的硬體與功能，讓重點集中在架構與通訊流程，而不是特定產品的複雜功能。
+目前的概念驗證刻意使用相對單純的硬體與功能，讓重點集中在架構、通訊流程與工程規則，而不是特定產品的複雜功能。
 
 ---
 
@@ -913,6 +1321,7 @@ AI 在其中可以協助：
 - 協助比較不同設計方案
 - 根據 Protocol 產生 C 或 C# 初步實作
 - 協助建立 CI 與自動檢查工具
+- 協助檢查 OSHAL、Device Interface 與模組邊界
 
 但 AI 並不是最後的工程決策者。
 
@@ -924,6 +1333,7 @@ AI 在其中可以協助：
 - 審查設計
 - 驗證程式碼
 - 進行硬體測試
+- 判斷抽象層是否合理
 - 判斷產品是否可以發布
 - 承擔最終工程責任
 
@@ -935,15 +1345,20 @@ AI 可以加快整理、生成與檢查的速度，但不能取代真實世界�
 
 這套方法論目前仍處於實驗階段。
 
-雖然已經建立：
+雖然已經建立或開始建立：
 
-- 文件
-- 專案樣板
+- Software Engineering Rules
+- Architecture Patterns
+- Concurrency Guide
+- Logging Guide
+- Testing Guide
 - Coding Rules
+- 專案樣板
 - 自動檢查工具
 - Protocol 定義
 - PC 端概念驗證
 - MCU 端概念驗證
+- OSHAL 與 Device 模組化方向
 
 但這並不代表它已經適用於所有產品或所有產業。
 
@@ -952,6 +1367,7 @@ AI 可以加快整理、生成與檢查的速度，但不能取代真實世界�
 它還需要經過不同類型的實際專案驗證，例如：
 
 - 不同 MCU 平台
+- 不同 RTOS
 - 不同電腦程式語言
 - 不同通訊介面
 - 一對多裝置架構
@@ -961,6 +1377,7 @@ AI 可以加快整理、生成與檢查的速度，但不能取代真實世界�
 - 斷線與重新連線
 - 韌體升級
 - 多版本相容
+- Sensor、Charger、Smart Battery 等 Device 替換
 - 功能安全
 - 資訊安全
 - 工業產品
@@ -994,7 +1411,11 @@ AI 可以加快整理、生成與檢查的速度，但不能取代真實世界�
 - 通訊協議只存在於程式碼中
 - PC 與 MCU 各自維護不同規格
 - 文件與實作互相矛盾
+- RTOS 與應用邏輯過度綁定
+- Device Driver 與產品功能混在一起
+- 更換 Sensor、Charger 或 Smart Battery 時需要大幅重寫
 - 錯誤情境沒有事先定義
+- Logging 無法重建問題
 - 測試只驗證正常流程
 - 更換人員後，原本的設計理由消失
 - Coding Rules 只有口頭要求
@@ -1015,17 +1436,22 @@ AI 可以加快整理、生成與檢查的速度，但不能取代真實世界�
 
 它比較像是一場長期的工程實驗。
 
-目前整套內容可以概括為四個層次：
+目前整套內容可以概括為：
 
-1. 共同架構
-2. Embedded C 與 C# Coding Rules
-3. 單一且具權威性的資訊來源
-4. 實際可執行的概念驗證
+1. Software Engineering Rules
+2. Architecture Patterns
+3. Embedded C 與 C# Coding Rules
+4. Concurrency、Logging 與 Testing Guides
+5. 單一且具權威性的資訊來源
+6. OSHAL 與跨 RTOS 抽象
+7. Device 模組化與可抽換設計
+8. 可擴充、可延伸的系統架構
+9. 實際可執行的 Host-Device 概念驗證
 
 這場實驗試著回答一個問題：
 
-> 能不能把工程師多年累積、難以言傳的實務經驗，整理成一套人類與 AI 都能理解、使用、檢查並持續改善的工程方法？
+> 能不能把工程師多年累積、難以言傳的實務經驗，整理成一套人類與 AI 都能理解、使用、檢查、實作並持續改善的工程方法？
 
 目前還沒有最終答案。
 
-但透過文件、樣板、Coding Rules、單一資訊來源、概念驗證與實際程式碼，至少可以一步一步把原本只存在腦中的經驗，轉換成可以被閱讀、被質疑、被實作，也能被後續工程專案檢驗的內容。
+但透過文件、樣板、Coding Rules、Architecture Patterns、OSHAL、Device 模組化、單一資訊來源、概念驗證與實際程式碼，至少可以一步一步把原本只存在腦中的經驗，轉換成可以被閱讀、被質疑、被實作，也能被後續工程專案檢驗的內容。

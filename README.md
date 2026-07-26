@@ -18,7 +18,7 @@
 - 發生逾時、斷線、資料錯誤、模組失效或裝置重啟時，系統應該如何處理？
 - 哪些資訊應該成為所有程式共同遵循的唯一來源？
 - 如何避免 PC、SoC 與 MCU 各自維護不同版本的通訊規格？
-- 如何讓不同 RTOS、MCU 平台與外部 IC 可以被替換？
+- 如何隔離不同 RTOS、MCU 平台與外部 IC 的差異，並評估後續抽換的可行性？
 - 如何設計 Logging、Testing、Concurrency 與錯誤處理？
 - 哪些規則可以透過工具自動檢查？
 - 哪些判斷仍然必須由工程師負責？
@@ -30,9 +30,58 @@
 
 ---
 
+# 文件定位與權威邊界
+
+本儲存庫是整套 Host-Device Control 工程方法論的白話介紹與導覽入口。
+
+它的用途是協助一般讀者、工程師及 AI 快速理解這套方法論的背景、範圍、儲存庫分工與概念驗證方向。
+
+本儲存庫本身：
+
+- 不建立新的正式工程規則
+- 不修改或取代 Framework 中的權威文件
+- 不取代個別專案的需求、風險控制、硬體規格或 Project Protocol
+- 不代表所有相關文件都已經完成、定版或通過實際產品驗證
+- 不應被單獨視為產品設計、測試證據、法規符合性或發布核准依據
+
+正式的方法論文件、文件版本、文件狀態及權威主題，應以 [`host-device-control-framework`](https://github.com/jkman357/host-device-control-framework) 的 GitHub `main`、其中的 [`authority-registry.yaml`](https://github.com/jkman357/host-device-control-framework/blob/main/authority-registry.yaml)，以及其所指向的權威文件為準。
+
+實際專案中的產品需求、風險控制、硬體規格、Project Protocol、測試證據與核准紀錄，則仍應以該專案所指定及核准的來源為準。
+
+若本 Overview 與上述權威來源不一致，應以上述權威來源為準。
+
+---
+
+# 名詞說明：Host／Device 與 Coordinator／Node
+
+為了讓一般讀者容易理解，本文件主要使用 Host 與 Device。
+
+在正式 Framework 文件中，則使用 Coordinator 與 Node 表示通訊關係中的系統角色。
+
+一般情況下：
+
+- Host 通常扮演 Coordinator
+- Device 通常扮演 Node
+
+但 Coordinator 與 Node 是「關係角色」，不是固定綁定某一種硬體、作業系統或程式語言。
+
+例如：
+
+- PC 可以是 MCU 的 Coordinator
+- MCU 可以是 PC 的 Node
+- SoC 可以是上層 PC 的 Node
+- 同一顆 SoC 也可以同時是下層 MCU 的 Coordinator
+- 一顆 Main MCU 可以是多顆 Sub MCU 的 Coordinator
+
+因此，Coordinator 不一定是 PC，Node 也不一定是 MCU。
+
+實際角色應依特定通訊關係、控制權、責任邊界與 Protocol 定義判定。
+
+---
+
 # 這套方法論的定位
 
-這是一套以 Host-Device Control System 為主要實驗場景，涵蓋軟體工程規則、架構模式、並行處理、Logging、Testing、RTOS 抽象化、Device 模組化與單一資訊來源治理的實驗性工程方法論。
+這是一套以 Host-Device Control System 為主要實驗場景，涵蓋軟體工程規則、架構模式、並行處理、Logging、Testing、單一資訊來源治理，以及 RTOS 抽象化與 Device 模組化後續實作方向的實驗性工程方法論。
 
 Host 與 Device 之間的控制及資料交換，是目前最主要的概念驗證場景，但不是這套方法論唯一關注的內容。
 
@@ -100,7 +149,7 @@ Host、SoC、MCU 與外部裝置的整合，表面上看起來只是「把各個
 - Concurrency Rules
 - Logging Strategy
 - Testing Strategy
-- RTOS 與硬體抽象層
+- RTOS 與硬體抽象方向
 - 錯誤處理
 - 版本與變更規則
 - 自動檢查方式
@@ -293,7 +342,7 @@ Testing Guide 會從設計階段開始考慮：
 
 ---
 
-# 透過 OSHAL 支援不同 Bare-metal 與 RTOS 環境
+# OSHAL：後續跨執行環境實作與驗證方向
 
 Firmware 端可能使用不同的執行環境。
 
@@ -306,20 +355,22 @@ Firmware 端可能使用不同的執行環境。
 - TI-RTOS
 - 其它 RTOS
 
-如果應用程式直接呼叫特定 RTOS 的 API，整個系統便會與該 RTOS 緊密綁定。
+目前 Framework 已經整理執行模型、模組責任、Concurrency、Driver、HAL、BSP 及平台相依性隔離等基礎原則。
 
-例如，應用模組若直接使用：
+不過，這不代表目前已經完成一套可以直接支援所有 Bare-metal 與 RTOS 的統一 OSHAL，也不代表更換 RTOS 時可以完全不修改應用程式。
+
+OSHAL 是這套方法論後續預計透過實際專案驗證的方向之一。
+
+如果應用模組直接呼叫特定 RTOS 的 API，例如：
 
 - FreeRTOS Queue
 - ThreadX Message Queue
 - Zephyr Message Queue
-- 特定 RTOS 的 Mutex、Thread 或 Timer API
+- 特定 RTOS 的 Mutex、Thread、Event 或 Timer API
 
-未來更換 RTOS 時，便可能需要修改大量應用層程式碼。
+RTOS 的差異便可能直接擴散到應用層。
 
-因此，這套方法論會透過 OSHAL，也就是本專案用來隔離 Bare-metal 與不同 RTOS 差異的作業系統抽象層，降低應用程式對特定執行環境的直接依賴。
-
-概念上可以表示為：
+一種可能的隔離方向如下：
 
 ```text
 Application Modules
@@ -327,14 +378,14 @@ Application Modules
         ▼
        OSHAL
         │
-        ├──── Bare-metal Implementation
-        ├──── FreeRTOS Implementation
-        ├──── ThreadX Implementation
-        ├──── Zephyr Implementation
-        └──── Other RTOS Implementation
+        ├──── Bare-metal Adapter
+        ├──── FreeRTOS Adapter
+        ├──── ThreadX Adapter
+        ├──── Zephyr Adapter
+        └──── Other RTOS Adapter
 ```
 
-應用模組只依賴 OSHAL 提供的共同介面，例如：
+未來可由實際專案評估 OSHAL 是否需要提供下列共同能力：
 
 - Task 或 Thread
 - Queue
@@ -346,19 +397,31 @@ Application Modules
 - Time
 - Critical Section
 
-不同 RTOS 的 API 差異，則由各自的 OSHAL Implementation 負責處理。
+但實際介面、能力範圍、生命週期、錯誤語意、資源限制及不同 RTOS Adapter，仍需要由後續專案定義、實作與測試。
 
-這樣做不代表更換 RTOS 可以完全不修改任何程式。
+不同 RTOS 在排程、記憶體、時間精度、同步行為、中斷整合與錯誤模式上可能存在實質差異。
 
-不同 RTOS 在排程、記憶體、時間精度、同步行為與錯誤模式上仍然可能不同，也仍然需要重新驗證。
-
-但 OSHAL 可以降低平台差異直接擴散到整個應用程式的程度。
+因此，OSHAL 的目標是降低平台差異直接擴散到應用層，而不是保證 RTOS 可以無成本、無風險或無須重新驗證地抽換。
 
 ---
 
-# Device 模組化與可抽換設計
+# Device 模組化：後續實作與驗證方向
 
-Device 端不應將所有硬體功能直接寫死在產品邏輯中。
+目前 Framework 已提供分層、Adapter、Driver、HAL、BSP、相依方向及平台隔離等基礎原則。
+
+這些原則可以作為 Sensor、Charger IC、Smart Battery、Motor Driver 及其它外部裝置模組化的設計基礎。
+
+不過，目前並未宣稱已經完成一套適用所有專案的統一：
+
+- Sensor Interface
+- Charger Interface
+- Smart Battery Interface
+- Motor Driver Interface
+- Capability Model
+- Mock Device Standard
+- Driver Replacement Compatibility Rule
+
+具體 Device Interface 仍然屬於各專案需要依實際硬體能力、產品需求、錯誤模式與測試策略建立及驗證的實作內容。
 
 實際產品可能需要更換：
 
@@ -373,11 +436,9 @@ Device 端不應將所有硬體功能直接寫死在產品邏輯中。
 - Communication Transceiver
 - 其它外部 IC 或模組
 
-例如，同一個產品可能先使用某一款 Charger IC，後續因為停產、缺料、成本或功能需求而更換另一款 IC。
+如果產品邏輯直接依賴特定 IC 的 Register 與 Driver，硬體變更便可能影響大量程式。
 
-如果應用程式直接依賴特定 IC 的 Register 與 Driver，硬體更換時便會影響大量程式。
-
-因此，可以透過共同介面將產品功能與特定元件分離。
+因此，可由專案評估透過共同介面與 Adapter，將應用功能和特定元件實作分離。
 
 概念上可以表示為：
 
@@ -389,10 +450,10 @@ Power Management Application
             │
       ┌─────┴─────┐
       │           │
-LTC4162 Driver  Other Charger Driver
+Charger Driver A  Charger Driver B
 ```
 
-Sensor 也可以採用相同方式：
+Sensor 也可以採用類似方向：
 
 ```text
 Sensing Application
@@ -405,23 +466,22 @@ Sensing Application
 Sensor A Sensor B Mock Sensor
 ```
 
-Smart Battery、Motor Driver 或其它裝置，也可以依照相同原則設計。
+以上圖示只是架構概念，不代表目前 Framework 已經提供可直接使用的標準介面或完整實作。
 
-這類模組化設計的目的包括：
+這類模組化方向希望達成：
 
-- 降低特定 IC 對整個系統的影響
+- 限制特定 IC 對上層應用的影響
 - 支援不同供應商或不同產品型號
-- 讓測試程式可以替換真實硬體
+- 讓測試程式可以使用 Mock 或替代實作
 - 讓新舊模組可以逐步轉移
-- 讓不同專案可以重複使用共同應用邏輯
-- 將硬體差異限制在 Driver 與 Adapter 層
-- 讓未來功能擴充時不需要全面改寫既有程式
+- 讓不同專案在條件允許時重用共同應用邏輯
+- 將硬體差異限制在 Driver、HAL 與 Adapter 層
 
-不過，可抽換不代表所有 Device 都能完全使用同一套功能。
+不過，可抽換不代表所有 Device 都具備相同能力，也不代表任何兩顆 IC 都能直接互換。
 
-不同元件的能力、限制與錯誤模式可能不同。
+不同元件的功能、限制、初始化流程、時序、精度、安全機制與錯誤模式可能不同。
 
-因此，共同介面應定義真正共通的能力，而不能為了表面一致，隱藏重要的硬體差異。
+因此，共同介面只能定義真正共通的能力；無法共通的差異，必須被明確保留、建模及驗證，而不能為了表面一致而被隱藏。
 
 ---
 
@@ -941,7 +1001,7 @@ Host-Device 系統通常同時包含多個程式與多個儲存庫。
 
 在目前的概念驗證中：
 
-### `host-device-control-poc-system`
+### [`host-device-control-poc-system`](https://github.com/jkman357/host-device-control-poc-system)
 
 這個儲存庫中的通訊協議文件，是 PC 與 MCU 通訊定義的主要資訊來源。
 
@@ -1151,6 +1211,78 @@ Protocol 與文件可以檢查：
 
 ---
 
+# 如何將 Framework 與 Project Template 交給 AI 使用
+
+[`host-device-control-framework`](https://github.com/jkman357/host-device-control-framework) 與 [`host-device-control-project-template`](https://github.com/jkman357/host-device-control-project-template) 的主要用途之一，是提供 AI 可閱讀、可引用及可持續遵循的工程上下文。
+
+這兩個儲存庫不是要讓 AI 取代工程師，而是希望避免每次開啟新專案或新聊天室時，都要重新口頭解釋相同的架構原則、Coding Rules、文件責任與專案骨架。
+
+兩者的分工如下：
+
+- `host-device-control-framework`：提供方法論、規則、權威文件索引與設計約束
+- `host-device-control-project-template`：提供新專案開始時可複製、填寫及逐步實作的專案骨架
+
+## 建議使用流程
+
+當要開始一個新的 Host-Device Control 專案時，可以依照以下方式進行：
+
+1. 為該設計案建立獨立的 AI 專案或工作區。
+2. 在該專案或工作區中建立新的聊天室。
+3. 提供 Framework 與 Project Template 的儲存庫連結。
+4. 要求 AI 先閱讀及理解兩個儲存庫，再開始討論特定專案。
+5. 要求 AI 區分 Framework 規則、Project Template 欄位、專案需求、實作建議及尚待人員決定的事項。
+6. 將後續需求、架構、Protocol、文件、程式碼、測試與審查工作，持續放在同一個專案上下文中進行。
+7. 當 Framework 或 Template 更新時，要求 AI 重新讀取最新版並說明可能影響。
+
+## 建議起始提示詞
+
+```text
+請先閱讀與理解以下兩個儲存庫的 GitHub main：
+
+1. https://github.com/jkman357/host-device-control-framework
+2. https://github.com/jkman357/host-device-control-project-template
+
+接下來的討論將以這兩個儲存庫為工程方法與專案骨架基礎。
+
+請先：
+1. 閱讀 README、authority-registry.yaml，以及其指向的適用文件。
+2. 說明 Framework 與 Project Template 的責任分工。
+3. 區分正式權威內容、Draft／Review 中內容、範例、樣板與專案待填內容。
+4. 不要自行補造尚未提供的產品需求、硬體能力、Protocol 或測試結果。
+5. 對未知或尚未決定的項目，明確標示為 Unknown、TBD、None 或 Not applicable。
+6. 後續提出設計、文件或程式碼建議時，說明依據的 Framework 規則與專案假設。
+7. 保留由工程師進行需求確認、風險評估、Review、實體測試與最終核准的責任。
+
+完成後，先摘要你理解的權威來源、文件狀態、核心規則與尚待專案決定的事項。
+```
+
+## 後續討論的責任邊界
+
+AI 在後續討論中可以協助：
+
+- 整理需求與未知事項
+- 依 Template 建立專案文件
+- 依 Framework 提出架構與模組建議
+- 草擬 Protocol、程式碼與測試
+- 檢查文件、程式碼及規則的一致性
+- 找出可能的缺口、衝突與未處理情境
+
+但 AI 不應：
+
+- 把 Overview 當成正式權威來源
+- 把範例或概念圖誤認為已核准的專案設計
+- 自行創造產品需求、硬體能力或安全需求
+- 宣稱尚未執行的測試已經通過
+- 取代工程師的風險判斷、設計審查、硬體驗證或發布核准
+
+Framework 提供的是跨專案的工程方法與規則。
+
+Project Template 提供的是專案骨架。
+
+真正的產品需求、Project Protocol、硬體限制、風險控制、實作決策與客觀測試證據，仍然必須在個別專案中建立、確認及維護。
+
+---
+
 # 目前的儲存庫
 
 整個專案目前分成：
@@ -1162,7 +1294,7 @@ Protocol 與文件可以檢查：
 
 # 方法論與樣板
 
-## `host-device-control-framework`
+## [`host-device-control-framework`](https://github.com/jkman357/host-device-control-framework)
 
 這是整套方法論的源頭儲存庫。
 
@@ -1180,8 +1312,8 @@ Protocol 與文件可以檢查：
 - 錯誤處理原則
 - Embedded C Coding Rules
 - C# Coding Rules
-- OSHAL 設計原則
-- Device 模組化與抽象化原則
+- 與 OSHAL 相關的執行環境及平台隔離原則
+- Device 模組化與抽象化的基礎原則
 - 文件範本
 - 自動檢查工具
 - AI 輔助工程的使用原則
@@ -1189,11 +1321,13 @@ Protocol 與文件可以檢查：
 
 這個儲存庫不直接代表某一項產品的完整程式碼。
 
-它比較像是一套工程規則、設計依據與共同語言，用來協助後續專案建立一致的基礎。
+它比較像是一套工程規則、設計依據、權威文件索引與共同語言，用來協助後續專案建立一致的基礎。
+
+這個儲存庫的主要讀者之一是 AI。AI 應先讀取 GitHub `main`、`authority-registry.yaml` 及其所指向的適用文件，再依文件狀態與權威範圍協助後續專案工作。
 
 ---
 
-## `host-device-control-project-template`
+## [`host-device-control-project-template`](https://github.com/jkman357/host-device-control-project-template)
 
 這是依照 Framework 建立的專案樣板。
 
@@ -1210,6 +1344,8 @@ Protocol 與文件可以檢查：
 
 重點不是把所有表格填滿，而是避免重要工程判斷只存在於少數人的腦中，最後沒有留下可追蹤的設計依據。
 
+這個儲存庫也是提供給 AI 使用的專案起始骨架。AI 可以依 Framework 規則協助建立及填寫專案內容，但不得自行把未知需求、硬體能力、風險控制或測試結果補成既定事實。
+
 ---
 
 # 概念驗證
@@ -1218,7 +1354,7 @@ Protocol 與文件可以檢查：
 
 ---
 
-## `host-device-control-poc-system`
+## [`host-device-control-poc-system`](https://github.com/jkman357/host-device-control-poc-system)
 
 這個儲存庫負責定義 PC 與 MCU 之間的通訊協議。
 
@@ -1242,7 +1378,7 @@ Protocol 與文件可以檢查：
 
 ---
 
-## `host-device-control-poc-pc-app`
+## [`host-device-control-poc-pc-app`](https://github.com/jkman357/host-device-control-poc-pc-app)
 
 這是概念驗證中的 PC 端應用程式。
 
@@ -1273,7 +1409,7 @@ Protocol 與文件可以檢查：
 
 ---
 
-## `host-device-control-poc-stm32f446re-fw`
+## [`host-device-control-poc-stm32f446re-fw`](https://github.com/jkman357/host-device-control-poc-stm32f446re-fw)
 
 這是概念驗證中的 MCU 韌體。
 
@@ -1430,6 +1566,48 @@ AI 可以加快整理、生成與檢查的速度，但不能取代真實世界�
 
 ---
 
+# Copyright 與使用邊界
+
+Copyright © 2026 Ray Yang. All rights reserved.
+
+## No License Granted
+
+除非特定檔案另有明確聲明，或著作權人另以書面授權，否則本儲存庫不授予重製、修改、散布、發布、再授權、銷售、商業使用或將原始內容納入其它專案的權利。
+
+內容公開放置於 GitHub，不代表授予使用、修改、散布或商業化權限。
+
+## Personal Engineering Project Disclaimer
+
+本儲存庫是個人工程研究、方法論整理與概念驗證介紹。
+
+內容不能取代：
+
+- 產品需求
+- 專業工程判斷
+- 合格人員審查
+- 實體硬體驗證
+- 資訊安全評估
+- 法律意見
+- 法規核准
+- 產品認證
+- 正式第三方標準
+
+## No Employer or Company Representation
+
+本儲存庫不代表任何現任或過往雇主、客戶、合作夥伴、供應商或其它公司與組織的正式政策、規格、設計、Coding Standards、意見、核准、採用、認證或背書。
+
+不應僅因作者或貢獻者與某組織具有現在或過去的關係，而推定該組織已採用、核准、贊助、認證或支持本儲存庫。
+
+## AI Assistance and Human Responsibility
+
+生成式 AI 可能被用於文件草擬、重整、翻譯、一致性檢查、程式實作支援、測試準備與產出物生成。
+
+AI 協助不會轉移工程權限或責任。
+
+需求確認、來源查證、工程判斷、Review、實體測試、客觀驗證、核准與最終責任，仍然必須由適當的人員承擔。
+
+---
+
 # 結語
 
 這不是一套已經完成的標準。
@@ -1443,8 +1621,8 @@ AI 可以加快整理、生成與檢查的速度，但不能取代真實世界�
 3. Embedded C 與 C# Coding Rules
 4. Concurrency、Logging 與 Testing Guides
 5. 單一且具權威性的資訊來源
-6. OSHAL 與跨 RTOS 抽象
-7. Device 模組化與可抽換設計
+6. OSHAL 與跨 RTOS 抽象的後續實作與驗證方向
+7. Device 模組化與可抽換設計的後續實作與驗證方向
 8. 可擴充、可延伸的系統架構
 9. 實際可執行的 Host-Device 概念驗證
 
@@ -1454,4 +1632,4 @@ AI 可以加快整理、生成與檢查的速度，但不能取代真實世界�
 
 目前還沒有最終答案。
 
-但透過文件、樣板、Coding Rules、Architecture Patterns、OSHAL、Device 模組化、單一資訊來源、概念驗證與實際程式碼，至少可以一步一步把原本只存在腦中的經驗，轉換成可以被閱讀、被質疑、被實作，也能被後續工程專案檢驗的內容。
+但透過文件、樣板、Coding Rules、Architecture Patterns、OSHAL 與 Device 模組化方向、單一資訊來源、概念驗證與實際程式碼，至少可以一步一步把原本只存在腦中的經驗，轉換成可以被閱讀、被質疑、被實作，也能被後續工程專案檢驗的內容。

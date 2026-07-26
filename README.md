@@ -1103,8 +1103,8 @@ PC 端與 MCU 端都必須依照這份定義實作，而不是各自在自己的
 - Concurrency Rules
 - Logging Rules
 - Testing Rules
-- OSHAL Interface
-- Device Interface
+- 專案自行建立並指定為權威來源的 OSHAL Interface
+- 專案自行建立並指定為權威來源的 Device Interface
 - 架構責任邊界
 - 測試預期結果
 - Release 條件
@@ -1183,7 +1183,7 @@ Protocol 與文件可以檢查：
 - 文件是否引用正確來源
 - 儲存庫結構是否符合要求
 - 不同模組是否違反責任邊界
-- OSHAL 或 Device Interface 是否缺少必要定義
+- 若專案已正式定義 OSHAL 或 Device Interface，可依該專案的介面契約與檢查規則確認必要定義是否完整
 
 不過，自動檢查只能找出已經明確定義的問題。
 
@@ -1211,75 +1211,219 @@ Protocol 與文件可以檢查：
 
 ---
 
-# 如何將 Framework 與 Project Template 交給 AI 使用
+# 如何使用 Framework、Project Template 與 AI
 
-[`host-device-control-framework`](https://github.com/jkman357/host-device-control-framework) 與 [`host-device-control-project-template`](https://github.com/jkman357/host-device-control-project-template) 的主要用途之一，是提供 AI 可閱讀、可引用及可持續遵循的工程上下文。
+[`host-device-control-framework`](https://github.com/jkman357/host-device-control-framework) 與 [`host-device-control-project-template`](https://github.com/jkman357/host-device-control-project-template) 的主要用途之一，是提供 AI 可閱讀、可引用並可持續遵循的工程上下文。
 
-這兩個儲存庫不是要讓 AI 取代工程師，而是希望避免每次開啟新專案或新聊天室時，都要重新口頭解釋相同的架構原則、Coding Rules、文件責任與專案骨架。
+這兩個儲存庫不是要讓 AI 取代工程師，也不是要讓每一個聊天室各自建立一套工程規則。
+
+它們的目的，是讓不同專案與不同 AI 聊天室，可以從清楚且可追蹤的共同來源開始工作。
 
 兩者的分工如下：
 
-- `host-device-control-framework`：提供方法論、規則、權威文件索引與設計約束
-- `host-device-control-project-template`：提供新專案開始時可複製、填寫及逐步實作的專案骨架
+- `host-device-control-framework`：提供跨專案的方法論、工程規則、權威文件索引與設計約束
+- `host-device-control-project-template`：提供建立新專案儲存庫時使用的骨架、AI 入口、專案輸入欄位與紀錄結構
+- 複製後的專案儲存庫：保存該專案的實際需求、限制、Framework 基線、Protocol、設計、決策、風險、測試計畫與紀錄
+- AI 專案與聊天室：讀取同一個專案儲存庫，並在被指定的工作範圍內協助分析、草擬、實作與檢查
+
+原始 Project Template 是建立專案時使用的來源。
+
+專案建立後，AI 的主要工作入口應該是**複製後的專案儲存庫**，而不是持續把原始 Template 當成該專案的事實來源。
+
+---
 
 ## 建議使用流程
 
 當要開始一個新的 Host-Device Control 專案時，可以依照以下方式進行：
 
-1. 為該設計案建立獨立的 AI 專案或工作區。
-2. 在該專案或工作區中建立新的聊天室。
-3. 提供 Framework 與 Project Template 的儲存庫連結。
-4. 要求 AI 先閱讀及理解兩個儲存庫，再開始討論特定專案。
-5. 要求 AI 區分 Framework 規則、Project Template 欄位、專案需求、實作建議及尚待人員決定的事項。
-6. 將後續需求、架構、Protocol、文件、程式碼、測試與審查工作，持續放在同一個專案上下文中進行。
-7. 當 Framework 或 Template 更新時，要求 AI 重新讀取最新版並說明可能影響。
+1. 使用 `host-device-control-project-template` 建立新的專案儲存庫。
+2. 檢查新專案儲存庫中的 `LICENSE` 與 `NOTICE.md`，確認所有權、公開方式與散布條件。
+3. 由授權人員填寫 `FRAMEWORK_REFERENCE.md` 與 `PROJECT_INPUT.md`。
+4. 對尚未確認的必要項目，明確使用 `TBD`、`Unknown`、`None` 或 `N/A`，不要留白，也不要要求 AI 自行猜測。
+5. 在提供內容給 AI 之前，確認資料可以被揭露，並移除或保護機密、個人、受管制、出口管制、憑證及未獲授權的第三方內容。
+6. 為該設計案建立獨立的 AI 專案或工作區。
+7. 依工作範圍建立聊天室，例如：
+   - 系統架構
+   - Coordinator／PC App
+   - Node／MCU Firmware
+   - Hardware／Datasheet Analysis
+   - Protocol／Integration
+   - Verification and Validation
+8. 將**新建立的專案儲存庫**連結提供給 AI。
+9. 要求每一個聊天室先閱讀專案中的 `START_HERE.md`，並只處理該聊天室被指定的工作範圍。
+10. AI 依 `START_HERE.md` 的順序，讀取：
+    - `FRAMEWORK_REFERENCE.md`
+    - `PROJECT_INPUT.md`
+    - `docs/Approval_Records.md`
+    - `docs/Decision_Log.md`
+    - 與本次工作範圍相關的專案文件
+    - 適用的上游 Framework 文件
+11. 後續所有聊天室都以同一個專案儲存庫為共同來源，並將需要保留的需求、決策、風險、文件與變更寫回專案中。
+12. 所有 AI 產出都必須由適當的人員 Review；AI 不得自行建立核准、風險接受、測試通過、Evidence 接受、Framework Conformance 或 Release 結論。
+
+概念上可以表示為：
+
+```text
+host-device-control-framework
+    跨專案工程方法、規則與權威文件
+                    │
+                    │ 由 FRAMEWORK_REFERENCE.md 指定來源與適用性
+                    ▼
+由 Project Template 建立的專案儲存庫
+    專案事實、需求、Protocol、設計、決策、
+    Framework 基線、風險、測試與紀錄
+                    │
+                    │ 每個聊天室先讀 START_HERE.md
+                    ▼
+AI Project / Chats
+    只處理被指定的工作範圍
+```
+
+---
+
+## Framework 版本與基線控制
+
+Framework 的 GitHub `main` 可以作為最新內容的檢視來源，但「最新版本」不應自動取代專案目前採用的 Framework 基線。
+
+專案應透過 `FRAMEWORK_REFERENCE.md` 記錄：
+
+- 上游 Framework 儲存庫
+- 供參考檢視的 Branch
+- 擬採用或已採用的完整 Commit SHA
+- 存取日期
+- Framework 各領域的適用性
+- 前一版 Framework 基線
+- 基線或適用性變更的影響評估來源
+
+在 Framework 尚未 Pin 到完整 Commit SHA、尚未完成適用性判定，或尚未由有效的外部核准紀錄確認前：
+
+- AI 可以將目前的 `main` 作為諮詢性參考
+- AI 必須明確說明來源尚未成為有效的專案 Framework 基線
+- 不應宣稱專案已符合 Framework
+- 不應以未鎖定的來源建立正式核准、Deviation 或 Conformance Claim
+
+當 Framework 或 Project Template 更新時，可以要求 AI 閱讀最新版並進行：
+
+- 差異分析
+- 適用性分析
+- 對需求、架構、Protocol、實作、風險、測試、Evidence、Release 與既有核准的影響分析
+
+但是：
+
+> 最新版不得自動取代專案目前記錄及核准的 Framework 基線。
+
+是否採用新版，仍需由授權人員決定。
+
+確認採用後，才可以：
+
+1. 更新 `FRAMEWORK_REFERENCE.md`
+2. 建立或更新變更影響評估
+3. 更新受影響的專案文件與實作
+4. 建立新的內容基線
+5. 完成必要的 Review 與核准紀錄
+6. 重新確認受影響的測試、Evidence、Claim 與 Release 狀態
+
+Framework 基線或適用性變更後，既有的下游核准不應被預設為仍然有效。
+
+受影響項目需要新的基線與紀錄，或由適當授權人員留下「不受影響」的明確結論與理由。
+
+---
 
 ## 建議起始提示詞
 
+建立專案儲存庫後，可以在新的 AI 聊天室使用以下提示詞。
+
 ```text
-請先閱讀與理解以下兩個儲存庫的 GitHub main：
+以下是本專案的 GitHub 儲存庫：
 
-1. https://github.com/jkman357/host-device-control-framework
-2. https://github.com/jkman357/host-device-control-project-template
+<PROJECT_REPOSITORY_URL>
 
-接下來的討論將以這兩個儲存庫為工程方法與專案骨架基礎。
+接下來的討論將以這個專案儲存庫所指定的專案事實、
+Framework 基線、權威來源與文件責任為基礎。
 
-請先：
-1. 閱讀 README、authority-registry.yaml，以及其指向的適用文件。
-2. 說明 Framework 與 Project Template 的責任分工。
-3. 區分正式權威內容、Draft／Review 中內容、範例、樣板與專案待填內容。
-4. 不要自行補造尚未提供的產品需求、硬體能力、Protocol 或測試結果。
-5. 對未知或尚未決定的項目，明確標示為 Unknown、TBD、None 或 Not applicable。
-6. 後續提出設計、文件或程式碼建議時，說明依據的 Framework 規則與專案假設。
-7. 保留由工程師進行需求確認、風險評估、Review、實體測試與最終核准的責任。
+請先依照下列順序閱讀：
 
-完成後，先摘要你理解的權威來源、文件狀態、核心規則與尚待專案決定的事項。
+1. START_HERE.md
+2. FRAMEWORK_REFERENCE.md
+3. PROJECT_INPUT.md
+4. docs/Approval_Records.md
+5. docs/Decision_Log.md
+6. 與本次工作範圍相關的專案文件
+7. 依 FRAMEWORK_REFERENCE.md 指向及判定適用的上游 Framework 文件
+
+本次工作範圍是：
+
+<REQUESTED_SCOPE>
+
+請遵守下列要求：
+
+1. 先說明你實際讀取的來源、目前 Framework 是否已 Pin、
+   Framework 適用性狀態，以及任何存取限制。
+2. 區分下列內容：
+   - 外部強制義務
+   - 已核准的專案需求、限制與決策
+   - 有效的 Framework 基線與適用規則
+   - Project Template 的骨架或提示內容
+   - 專案 Draft
+   - AI 建議
+   - 尚待人員決定的項目
+3. 不要自行補造尚未提供的產品需求、硬體能力、Protocol、
+   Authority、Approval、Risk Acceptance、測試結果或 Evidence。
+4. 對未知或尚未決定的項目，明確使用 Unknown、TBD、None 或 N/A。
+5. 只處理本次指定的工作範圍，不要自行生成整個系統。
+6. 提出設計、文件、程式碼或測試建議時，說明依據的來源、
+   Framework 規則、專案事實、假設與限制。
+7. 若專案目前只以 Framework main 作為諮詢性參考，
+   請明確說明它尚未成為有效的 pinned project baseline。
+8. 不要自動把較新的 Framework 或 Template 套用到本專案。
+   若發現新版，先提供差異與影響分析，等待授權人員決定。
+9. 保留由適當人員執行需求確認、架構決策、風險判斷、
+   Review、實體測試、Evidence 接受、核准與 Release 的責任。
+
+完成閱讀後，先摘要：
+
+- 目前專案狀態
+- 使用的來源與基線
+- 本次適用的權威文件
+- 重要未知事項、衝突與 Authority 缺口
+- 本次工作範圍內的下一個具體行動
+
+不要在第一次回覆中自行產生整個系統。
 ```
+
+---
 
 ## 後續討論的責任邊界
 
 AI 在後續討論中可以協助：
 
-- 整理需求與未知事項
-- 依 Template 建立專案文件
-- 依 Framework 提出架構與模組建議
+- 整理需求、限制與未知事項
+- 依專案文件結構草擬內容
+- 依適用的 Framework 規則提出架構與模組建議
 - 草擬 Protocol、程式碼與測試
-- 檢查文件、程式碼及規則的一致性
-- 找出可能的缺口、衝突與未處理情境
+- 檢查文件、程式碼、Protocol 與規則的一致性
+- 找出可能的缺口、衝突、風險與未處理情境
+- 比較新版 Framework 或 Template 對既有專案的可能影響
 
 但 AI 不應：
 
-- 把 Overview 當成正式權威來源
-- 把範例或概念圖誤認為已核准的專案設計
-- 自行創造產品需求、硬體能力或安全需求
+- 把本 Overview 當成正式權威來源
+- 把原始 Project Template 當成已建立專案的事實來源
+- 把範例、概念圖或 Draft 誤認為已核准的專案設計
+- 自行創造產品需求、硬體能力、安全需求或 Authority
+- 自行把 Framework `main` 宣稱為已核准的專案基線
+- 自動將專案切換到較新的 Framework 或 Template
 - 宣稱尚未執行的測試已經通過
-- 取代工程師的風險判斷、設計審查、硬體驗證或發布核准
+- 宣稱未被接受的 Evidence 已經有效
+- 取代工程師的風險判斷、設計審查、硬體驗證、核准或發布決策
 
-Framework 提供的是跨專案的工程方法與規則。
+Framework 提供的是跨專案工程方法與規則。
 
-Project Template 提供的是專案骨架。
+Project Template 提供的是建立新專案儲存庫的骨架。
 
-真正的產品需求、Project Protocol、硬體限制、風險控制、實作決策與客觀測試證據，仍然必須在個別專案中建立、確認及維護。
+複製後的專案儲存庫，才是 AI 進行後續專案工作的主要入口與專案資訊來源。
+
+真正的產品需求、Project Protocol、硬體限制、風險控制、實作決策、客觀測試證據、核准與 Release 紀錄，仍然必須在個別專案中由適當人員建立、確認及維護。
 
 ---
 

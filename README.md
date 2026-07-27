@@ -2,6 +2,11 @@
 
 ## 一套從實務經驗整理而來的實驗性工程方法論
 
+- Overview Version：`v0.2.0`
+- Status：`Baseline`
+- Promoted from：`v0.2.0-rc.1`
+- Release rule：討論期間使用 `vX.Y.Z-rc.N`；只有授權人員明確確認「凍結」後，才可移除 `-rc.N` 並形成正式基線。
+
 這是一個實驗性的 Side Project。
 
 它的起點，不是想再發明一套新的通訊協定，也不是想建立一個適用所有產品、所有平台與所有產業的萬用框架。
@@ -27,6 +32,39 @@
 這些事情很難只靠一份程式碼說清楚，也很難從單一產品或單一技術平台直接歸納出來。
 
 因此，這個專案嘗試把這些經驗整理成一套可閱讀、可討論、可實作、可檢查，也可以持續修正的工程架構。
+
+---
+
+# 核心哲學：建立可持續累積的工程能力
+
+這套方法論追求的不是一次性的程式碼、文件或 AI 回覆，而是一種可以持續開發、擴充、維護、驗證、交接及累積的工程方式。
+
+特定 MCU、RTOS、通訊介面、程式語言、AI 模型與工具都可能改變。真正希望保留下來的，是能跨專案延續的工程原則、責任邊界、權威來源、驗證方式與 Lessons Learned。
+
+實際專案與概念驗證不是 Framework 的一次性消耗品，而是用來驗證及改善方法論的工程實例：
+
+```text
+實際專案或概念驗證
+        │
+        ▼
+實作、整合與實際驗證
+        │
+        ▼
+發現可重複的問題與限制
+        │
+        ▼
+萃取 Lessons Learned
+        │
+        ▼
+更新 Methodology／Framework／Template
+        │
+        ▼
+由下一個專案再次驗證
+```
+
+不是每個個案問題都應寫入 Framework。只有在問題可跨專案、跨平台成立，能降低未來成本，而且可以轉換成清楚可執行的原則時，才值得沉澱為共同方法。
+
+AI 在這個循環中可以協助閱讀、整理、比對、生成與檢查，但 AI 本身也是可替換的工具。工程狀態不應只存在於某一個模型的記憶、聊天記錄或隱藏上下文中，而應保存在人員可以讀取、AI 可以重新建立上下文、且能重新驗證的工程資產內。
 
 ---
 
@@ -1217,18 +1255,19 @@ Protocol 與文件可以檢查：
 
 # 如何使用 Framework、Project Template 與 AI
 
-[`host-device-control-framework`](https://github.com/jkman357/host-device-control-framework) 與 [`host-device-control-project-template`](https://github.com/jkman357/host-device-control-project-template) 的主要用途之一，是提供 AI 可閱讀、可引用並可持續遵循的工程上下文。
+[`host-device-control-framework`](https://github.com/jkman357/host-device-control-framework) 與 [`host-device-control-project-template`](https://github.com/jkman357/host-device-control-project-template) 的主要用途之一，是提供人員與 AI 都能閱讀、引用、重新建立上下文並持續遵循的工程來源。
 
-這兩個儲存庫不是要讓 AI 取代工程師，也不是要讓每一個聊天室各自建立一套工程規則。
+這兩個儲存庫不是要讓 AI 取代工程師，也不是要讓每一個 AI provider、agent、session 或聊天室各自建立一套工程規則。
 
-它們的目的，是讓不同專案與不同 AI 聊天室，可以從清楚且可追蹤的共同來源開始工作。
+它們的目的，是讓不同專案、工程師及可替換的 AI 工具，可以從清楚、可追蹤且可重新驗證的共同來源開始或接續工作。
 
 兩者的分工如下：
 
 - `host-device-control-framework`：提供跨專案的方法論、工程規則、權威文件索引與設計約束
 - `host-device-control-project-template`：提供建立新專案儲存庫時使用的骨架、AI 入口、專案輸入欄位與紀錄結構
 - 複製後的專案儲存庫：保存該專案的實際需求、限制、Framework 基線、Protocol、設計、決策、風險、測試計畫與紀錄
-- AI 專案與聊天室：讀取同一個專案儲存庫，並在被指定的工作範圍內協助分析、草擬、實作與檢查
+- `WORK_CONTINUATION.md`：保存可攜式工作目標、修改範圍、已執行檢查、已知問題、待辦事項與交接狀態，但不建立 Approval、Evidence Acceptance、Risk Acceptance 或 Release authority
+- AI 工具、agent、session 與工程師：讀取同一組受控專案資產，並在被指定的工作範圍內協助分析、草擬、實作、驗證與接續
 
 原始 Project Template 是建立專案時使用的來源。
 
@@ -1244,32 +1283,31 @@ Protocol 與文件可以檢查：
 2. 檢查新專案儲存庫中的 `LICENSE` 與 `NOTICE.md`，確認所有權、公開方式與散布條件。
 3. 由授權人員填寫 `FRAMEWORK_REFERENCE.md` 與 `PROJECT_INPUT.md`。
 4. 對尚未確認的必要項目，明確使用 `TBD`、`Unknown`、`None` 或 `N/A`，不要留白，也不要要求 AI 自行猜測。
-5. 在提供內容給 AI 之前，確認資料可以被揭露，並移除或保護機密、個人、受管制、出口管制、憑證及未獲授權的第三方內容。
-6. 為該設計案建立獨立的 AI 專案或工作區。
-7. 依工作範圍建立聊天室，例如：
-   - 系統架構
-   - Coordinator／PC App
-   - Node／MCU Firmware
-   - Hardware／Datasheet Analysis
-   - Protocol／Integration
-   - Verification and Validation
-8. 將**新建立的專案儲存庫**連結提供給 AI。
-9. 要求每一個聊天室先閱讀專案中的 `START_HERE.md`，並只處理該聊天室被指定的工作範圍。
-10. AI 依 `START_HERE.md` 的順序，讀取：
-    - `FRAMEWORK_REFERENCE.md`
-    - `PROJECT_INPUT.md`
-    - `docs/Approval_Records.md`
-    - `docs/Decision_Log.md`
-    - 與本次工作範圍相關的專案文件
-    - 適用的上游 Framework 文件
-11. 後續所有聊天室都以同一個專案儲存庫為共同來源。
-    - AI 可以草擬需要保留的需求、設計、決策、風險、文件與變更內容。
-    - 草擬內容必須先由適當人員 Review；經人員確認後，才可以寫回專案作為 Draft 或候選內容。
-    - 寫回專案本身不代表內容已被 Reviewed、Approved、Accepted，或已成為有效專案基線。
-    - 正式 lifecycle 狀態必須由 `docs/Approval_Records.md` 中針對精確內容基線與範圍建立的有效紀錄確認。
-12. Approval、Risk Acceptance、Evidence Acceptance、Test Result、Framework Conformance 與 Release 等正式紀錄，只能在真實決策、審查或執行完成後，由具備適當權限的人員建立或確認。
-    - AI 不得自行建立、推論、補造或冒充上述正式紀錄與結論。
-    - 所有 AI 產出仍必須由適當人員 Review。
+5. 在提供內容給任何 AI 或外部工具之前，確認資料可以被揭露，並移除或保護機密、個人、受管制、出口管制、憑證及未獲授權的第三方內容。
+6. 建立受控工作來源。依工具能力，可以是：
+   - Git repository 或特定 commit／tag
+   - 乾淨且可追蹤的 working tree
+   - 保留完整目錄結構的 Project ZIP
+7. 將完整工作來源提供給所選 AI 工具、agent、session 或工程師，不要只提供零散檔案、聊天摘要或未標示來源的貼上內容。
+8. 要求接手者先依 `START_HERE.md` 讀取：
+   - `FRAMEWORK_REFERENCE.md`
+   - `PROJECT_INPUT.md`
+   - `WORK_CONTINUATION.md`
+   - `docs/Approval_Records.md`
+   - `docs/Decision_Log.md`
+   - 與本次工作範圍相關的專案文件
+   - 適用的上游 Framework 文件
+9. 依工作範圍分開處理系統架構、Coordinator／PC App、Node／MCU Firmware、Hardware／Datasheet、Protocol／Integration、Verification and Validation 等工作，但各工作來源仍應回到同一個受控專案。
+10. AI 可以草擬需求、設計、決策、風險、文件、程式碼與測試；草擬內容必須由適當人員 Review 後，才可寫回專案成為 Draft 或候選內容。寫回專案本身不代表已被 Approved、Accepted 或成為正式基線。
+11. 在 AI 中斷、額度不足、工具故障、切換 provider、切換 agent、跨 session 或由另一位工程師接手前，更新 `WORK_CONTINUATION.md`，至少記錄：
+    - 本次工作目標與範圍
+    - 使用的來源與來源身分
+    - 已修改及未修改的檔案
+    - 實際執行的 validator、build、tests 與結果
+    - 已知失敗、限制、假設與未完成事項
+    - 下一個具體行動及待人員決定的項目
+12. 接手者不得直接繼承前一個 AI 或人員宣稱的 `PASS`。應重新確認來源、工作樹、修改範圍與適用規則，並重新執行可用的 validator、build、tests 或實機驗證。
+13. Approval、Risk Acceptance、Evidence Acceptance、Test Result、Framework Conformance 與 Release 等正式紀錄，只能在真實決策、審查或執行完成後，由具備適當權限的人員建立或確認。AI 不得自行建立、推論、補造或冒充上述正式紀錄與結論。
 
 概念上可以表示為：
 
@@ -1278,18 +1316,35 @@ host-device-control-framework
     跨專案工程方法、規則與權威文件
                     │
                     │ 由 FRAMEWORK_REFERENCE.md 記錄候選來源與適用性
-                    │ 由授權人員核准，並以有效 APR-xxx 紀錄
-                    │ 與可追蹤核准證據確認精確內容基線
+                    │ 由授權人員核准精確內容基線
                     ▼
-由 Project Template 建立的專案儲存庫
+由 Project Template 建立的專案儲存庫／完整 Project ZIP
     專案事實、需求、Protocol、設計、決策、
-    Framework 基線、風險、測試與紀錄
+    Framework 基線、風險、測試、紀錄與工作接續狀態
                     │
-                    │ 每個聊天室先讀 START_HERE.md
+                    │ 每次開始或接手先讀 START_HERE.md
+                    │ 與 WORK_CONTINUATION.md
                     ▼
-AI Project / Chats
-    只處理被指定的工作範圍
+AI Provider／Agent／Session／Human Engineer
+    只處理指定範圍，結果寫回可攜式工程資產
 ```
+
+## AI 工作接續與供應商切換
+
+AI continuity 的目的不是保證所有 AI 會產生相同答案，也不是把前一個 AI 的聊天內容原封不動交給下一個 AI。
+
+真正需要保留的是可攜、可追蹤、可重新驗證的工程狀態。
+
+當原 AI 暫時不可用、額度耗盡、模型能力不適用，或專案決定切換工具時，下一個 AI 或工程師應能透過完整 repository、受控 working tree 或完整 ZIP，重新建立工作上下文並繼續執行。
+
+接續時應遵守：
+
+- 聊天記錄、模型記憶與隱藏上下文不得成為唯一工程來源
+- `WORK_CONTINUATION.md` 只保存工作狀態，不取代需求、決策、Approval、Evidence 或 Release authority
+- 接手者應區分已確認事實、前一個 AI 的推論、尚未驗證的結果與待人員決定事項
+- 前一個工作者宣稱的 validator、build 或 test `PASS` 必須在適用範圍內重新確認
+- 若只能取得 ZIP，應明確說明缺少 Git history，因此不能宣稱已完成 commit ancestry、tag 或 provenance 驗證
+- 修改完成後應交付完整且可重建的專案內容，不應只留下零散 patch、聊天片段或未納入專案的決策
 
 ---
 
@@ -1342,9 +1397,47 @@ Framework 的 GitHub `main` 可以作為最新內容的檢視來源，但「最�
 
 只有完成必要核准後，新版 Framework 才能被視為該專案的有效基線。
 
+為了在網路中斷、AI provider 不可用或工具限制下持續工作，可以使用具備完整目錄、來源說明、版本資訊及可驗證雜湊的 Framework ZIP 作為暫時工作來源。不過，ZIP 本身不包含完整 Git history，也不能取代正式核准所需的精確 commit SHA、tag 或其它受控不可變來源身分。
+
 Framework 基線或適用性變更後，既有的下游核准不應被預設為仍然有效。
 
 受影響項目需要新的基線與紀錄，或由適當授權人員留下「不受影響」的明確結論與理由。
+
+---
+
+## RC、凍結與正式版本
+
+討論、來回修改與驗證期間，不應把每次小改動都當成新的正式版本。
+
+同一輪工作的目標正式版本保持不變，只增加 Release Candidate 編號：
+
+```text
+vX.Y.Z-rc.1
+vX.Y.Z-rc.2
+vX.Y.Z-rc.3
+```
+
+Git commit 用來記錄每一次實際修改；RC suffix 用來表示內容仍在 Review、修正與驗證中。
+
+只有授權人員明確確認「凍結」後，才可：
+
+1. 移除 `-rc.N`
+2. 將狀態由 `Draft for Review` 改為正式基線狀態
+3. 更新 Changelog、索引與必要核准紀錄
+4. 重新執行適用的 validator、build、tests 與封裝檢查
+5. 建立正式 commit、tag 或 Release 身分
+
+例如：
+
+```text
+v1.1.0-rc.1
+    ↓ 修改與 Review
+v1.1.0-rc.2
+    ↓ 授權人員明確確認「凍結」
+v1.1.0
+```
+
+RC、ZIP 交付、validator `PASS` 或 AI 判斷，都不等同於正式凍結、產品 Release approval、Evidence Acceptance 或 Risk Acceptance。
 
 ---
 
@@ -1353,29 +1446,32 @@ Framework 基線或適用性變更後，既有的下游核准不應被預設為�
 建立專案儲存庫後，可以在新的 AI 聊天室使用以下提示詞。
 
 ```text
-以下是本專案的 GitHub 儲存庫：
+以下是本次提供的完整專案來源：
 
-<PROJECT_REPOSITORY_URL>
+<PROJECT_REPOSITORY_URL_OR_PACKAGE_IDENTITY>
 
-接下來的討論將以這個專案儲存庫所指定的專案事實、
-Framework 基線、權威來源與文件責任為基礎。
+來源形式：
+<Git repository／commit or tag／controlled working tree／complete Project ZIP>
+
+接下來的討論將以這個專案來源所指定的專案事實、
+Framework 基線、權威來源、工作接續紀錄與文件責任為基礎。
 
 請先依照下列順序閱讀：
 
 1. START_HERE.md
 2. FRAMEWORK_REFERENCE.md
 3. PROJECT_INPUT.md
-4. docs/Approval_Records.md
-5. docs/Decision_Log.md
-6. 與本次工作範圍相關的專案文件
-7. 讀取上游 Framework 文件時：
+4. WORK_CONTINUATION.md
+5. docs/Approval_Records.md
+6. docs/Decision_Log.md
+7. 與本次工作範圍相關的專案文件
+8. 讀取上游 Framework 文件時：
    - 若 `docs/Approval_Records.md` 已針對精確
      `DOC-FRAMEWORK` 內容基線建立有效核准紀錄，
      請讀取該 pinned Commit 中適用的 Framework 文件。
    - 若尚未 Pin，或尚未建立有效核准紀錄，
-     可以讀取目前的 Framework `main` 作為諮詢性參考，
-     但必須明確說明它不是本專案的有效 Framework 基線，
-     且不得據此宣稱 Approval、Deviation 或 Conformance。
+     可以讀取目前的 Framework `main` 或明確識別的完整 ZIP
+     作為諮詢性參考，但必須說明它不是本專案的有效 Framework 基線。
 
 本次工作範圍是：
 
@@ -1383,38 +1479,40 @@ Framework 基線、權威來源與文件責任為基礎。
 
 請遵守下列要求：
 
-1. 先說明你實際讀取的來源、目前 Framework 是否已 Pin、
-   FRAMEWORK_REFERENCE.md 中的內容是否仍為待審查候選內容、
-   是否已有 Approval_Records.md 的有效核准紀錄、
-   Framework 適用性狀態，以及任何存取限制。
-2. 區分下列內容：
+1. 先說明你實際讀取的來源、來源身分、存取限制、
+   是否具備 Git history，以及目前 Framework 是否已 Pin。
+2. 讀取 WORK_CONTINUATION.md，但不要直接繼承前一個 AI 或人員的結論；
+   重新確認修改範圍、已執行檢查與未完成事項。
+3. 區分下列內容：
    - 外部強制義務
    - 已核准的專案需求、限制與決策
    - 有效的 Framework 基線與適用規則
    - Project Template 的骨架或提示內容
    - 專案 Draft
-   - AI 建議
+   - 前一個工作者的推論或未驗證結果
+   - 本次 AI 建議
    - 尚待人員決定的項目
-3. 不要自行補造尚未提供的產品需求、硬體能力、Protocol、
+4. 不要自行補造尚未提供的產品需求、硬體能力、Protocol、
    Authority、Approval、Risk Acceptance、測試結果或 Evidence。
-4. 對未知或尚未決定的項目，明確使用 Unknown、TBD、None 或 N/A。
-5. 只處理本次指定的工作範圍，不要自行生成整個系統。
-6. 提出設計、文件、程式碼或測試建議時，說明依據的來源、
+5. 對未知或尚未決定的項目，明確使用 Unknown、TBD、None 或 N/A。
+6. 只處理本次指定的工作範圍，不要自行生成整個系統。
+7. 提出設計、文件、程式碼或測試建議時，說明來源、
    Framework 規則、專案事實、假設與限制。
-7. 若本次使用 Framework `main` 作為諮詢性參考，
-   請明確說明它尚未成為有效的 pinned project baseline，
-   並將所有依據該來源提出的內容標示為待確認建議，
-   不得宣稱 Approval、Deviation、Conformance 或正式採用。
 8. 不要自動把較新的 Framework 或 Template 套用到本專案。
    若發現新版，先提供差異與影響分析，等待授權人員決定。
-9. 保留由適當人員執行需求確認、架構決策、風險判斷、
-   Review、實體測試、Evidence 接受、核准與 Release 的責任。
+9. 重新執行本次範圍可用的 validator、build、tests 或其它檢查；
+   不要只引用前一個工作者宣稱的 PASS。
+10. 更新 WORK_CONTINUATION.md，記錄實際修改、驗證結果、
+    已知限制、未完成事項與下一個具體行動。
+11. 保留由適當人員執行需求確認、架構決策、風險判斷、
+    Review、實體測試、Evidence 接受、核准、凍結與 Release 的責任。
 
 完成閱讀後，先摘要：
 
 - 目前專案狀態
-- 使用的來源與基線
+- 使用的來源、來源身分與可驗證範圍
 - 本次適用的權威文件
+- 前次工作接續狀態與需要重新驗證的項目
 - 重要未知事項、衝突與 Authority 缺口
 - 本次工作範圍內的下一個具體行動
 
@@ -1444,7 +1542,10 @@ AI 在後續討論中可以協助：
 - 自行把 Framework `main` 宣稱為已核准的專案基線
 - 自動將專案切換到較新的 Framework 或 Template
 - 宣稱尚未執行的測試已經通過
+- 未重新確認來源與檢查結果，就直接繼承前一個 AI、agent、session 或工程師的 `PASS`
+- 把聊天記錄、模型記憶或 `WORK_CONTINUATION.md` 當成 Approval、Evidence、Risk Acceptance 或 Release authority
 - 宣稱未被接受的 Evidence 已經有效
+- 未經授權人員明確確認「凍結」，就把 RC 改成正式版本
 - 取代工程師的風險判斷、設計審查、硬體驗證、核准或發布決策
 
 Framework 提供的是跨專案工程方法與規則。
@@ -1625,7 +1726,7 @@ Project Template 提供的是建立新專案儲存庫的骨架。
 
 # AI 在這個專案中的角色
 
-這套方法論是透過人與 AI 多次討論後逐步整理出來的。
+這套方法論是透過人與 AI 多次討論後逐步整理出來的，但不依賴單一 AI 供應商、模型、agent、IDE 或聊天平台。AI 是可以替換的工程協作工具，而不是工程 authority 或唯一知識保存位置。
 
 AI 在其中可以協助：
 
@@ -1655,7 +1756,7 @@ AI 在其中可以協助：
 - 判斷產品是否可以發布
 - 承擔最終工程責任
 
-AI 可以加快整理、生成與檢查的速度，但不能取代真實世界中的工程判斷與驗證。
+AI 可以加快整理、生成與檢查的速度，但不能取代真實世界中的工程判斷與驗證。工程狀態也應寫回可攜、可追蹤且可重新驗證的專案資產，使另一個 AI 或工程師能重新建立上下文並接續工作。
 
 ---
 
@@ -1794,7 +1895,7 @@ AI 協助不會轉移工程權限或責任。
 
 這不是一套已經完成的標準。
 
-它比較像是一場長期的工程實驗。
+它比較像是一場長期的工程實驗。真正希望累積的，不是某一次 AI 對話、某一份 ZIP 或某一個 PoC 的成果，而是一套能被下一個專案、下一位工程師及下一個 AI 繼續使用並改善的工程能力。
 
 目前整套內容可以概括為：
 
